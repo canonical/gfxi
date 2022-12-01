@@ -8,13 +8,19 @@ The gfxi tool can be used to quickly query DRM information.
 It will answer typical questions like:
 
 *"What are the active CRTCs?"*
-`./gfxi crtc ACTIVE:1`
+```
+./gfxi crtc ACTIVE:1
+```
 
 *"What planes are available of type Overlay on the single active CRTC?"*
-`./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
+```
+./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
+```
 
 *"List all cursor planes"*
-`./gfxi plane type:Cursor 
+```
+./gfxi plane type:Cursor
+```
 
 ## Rationale
 

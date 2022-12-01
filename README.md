@@ -17,10 +17,24 @@ It will answer typical questions like:
 ./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
 ```
 
-*"List all cursor planes"*
+*"How many cursor planes does the second GPU device provide?"*
 ```
-./gfxi plane type:Cursor
+GFXI_DEVICE=/dev/dri/card1 ./gfxi plane type:Cursor | wc -l
 ```
+
+## Usage
+
+By default, gfxi will list planes.
+To list other resources, specify which type on the command line.
+
+The output can be filtered on property values with a key:value annotation.
+
+```
+./gfxi [plane|connector|crtc|framebuffer] [PROP:VALUE ... PROP:VALUE]
+```
+Currently, to see which properties are available for filtering, it is best to use drm_info.
+
+If you do not set the `GFXI_DEVICE` environment variable, `/dev/dri/card0` will be used as graphics device.
 
 ## Rationale
 

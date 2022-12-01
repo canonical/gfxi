@@ -17,15 +17,9 @@
 
 // Command line arguments.
 static const char* opt_class = "plane";
-static const char* opt_propkey = 0;
-static const char* opt_propval = 0;
-static int         opt_crtc = -1;
-static int         opt_connected = -1;
-static int         opt_active = 0;
 
 #define MAXFILT 16
 static int         flt_cnt = 0;
-static int         flt_msk = 0;
 static char        flt_keys[MAXFILT][80];
 static char        flt_vals[MAXFILT][80];
 
@@ -89,7 +83,7 @@ static int prop_value_passes(drmModePropertyPtr prop, uint64_t pval)
 
 
 // List the (connected) connectors
-static int list_conn(int fd, drmModeResPtr res, int connected_only)
+static int list_conn(int fd, drmModeResPtr res)
 {
 	const int numcon = res->count_connectors;
 	//fprintf(stderr, "Device has %d connectors.\n", numcon);
@@ -100,8 +94,7 @@ static int list_conn(int fd, drmModeResPtr res, int connected_only)
 		if (!connector)
 			continue;
 		int connected = connector->connection == DRM_MODE_CONNECTED;
-		if (connected || !connected_only)
-		//fprintf(stdout, "%s-%u\n", connector_name(connector->connector_type), connector->connector_type_id);
+		(void)connected;
 		fprintf(stdout, "%d\n", res->connectors[i]);
 #if 0
 		drmModeEncoderPtr encoder = drmModeGetEncoder(fd, connector->encoder_id);
@@ -114,7 +107,7 @@ static int list_conn(int fd, drmModeResPtr res, int connected_only)
 }
 
 
-static int list_crtc(int fd, drmModeResPtr res, int active_only)
+static int list_crtc(int fd, drmModeResPtr res)
 {
 	const int numcrtcs = res->count_crtcs;
 	for (int i=0; i<numcrtcs; ++i)
@@ -164,7 +157,7 @@ static int list_frmb(int fd, drmModeResPtr res)
 
 
 // List the planes that match the property value.
-static int list_plan(int fd, drmModeResPtr res, int crtc_id)
+static int list_plan(int fd, drmModeResPtr res)
 {
 	drmModePlaneRes* res_planes = drmModeGetPlaneResources(fd);
 	if (!res_planes)
@@ -179,8 +172,6 @@ static int list_plan(int fd, drmModeResPtr res, int crtc_id)
 		drmModePlanePtr plane = drmModeGetPlane(fd, res_planes->planes[p]);
 		if (!plane)
 			continue;
-
-		const int matching_crtc = crtc_id < 0 || crtc_id == plane->crtc_id;
 
 		drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
 		if (!props)
@@ -198,11 +189,8 @@ static int list_plan(int fd, drmModeResPtr res, int crtc_id)
 			if (!prop_value_passes(prop, actualval))
 				filter_out = 1;
 		}
-		if (!filter_out && matching_crtc)
-		{
+		if (!filter_out)
 			fprintf(stdout, "%d\n", plane->plane_id);
-			//fprintf(stderr, "%d\n", plane->crtc_id);
-		}
 	}
 	return numplanes;
 }
@@ -213,31 +201,14 @@ int main(int argc, char* argv[])
 	const char* devenv = getenv("GFXI_DEVICE");
 	const char* devname = devenv ? devenv : "/dev/dri/card0";
 
-	for (int i=1; i<argc; ++i)
-	{
-		const char* a = argv[i];
-		const char* s0 = strchr(a, ':');
-		const char* s1 = strchr(a, '=');
-		if (!s0 && !s1)
-		{
-			fprintf(stderr, "Error: All arguments should be of form option=value or property:value\n");
-			argc=1;
-		}
-	}
-
-	if (argc==1)
-	{
-		fprintf(stderr, "Usage: %s [class=plane|connector|crtc|framebuffer] [crtc=ID] property:value\n", argv[0]);
-		exit(1);
-	}
-
-	// Set up filtering
+	int show_usage = argc == 1;
 	for (int i=1; i<argc; ++i)
 	{
 		const char* a = argv[i];
 		const char* s = strchr(a, ':');
 		if (s)
 		{
+			// Handle filter option
 			const int idx = flt_cnt++;
 			if (idx >= MAXFILT)
 			{
@@ -247,18 +218,26 @@ int main(int argc, char* argv[])
 			strncpy(flt_keys[idx], a, (s-a));
 			strncpy(flt_vals[idx], s+1, sizeof(flt_vals[idx]));
 		}
+		else
+		{
+			// Handle class option
+			if (!strcmp(a, "plane"))
+				opt_class = a;
+			else if (!strcmp(a, "connector"))
+				opt_class = a;
+			else if (!strcmp(a, "crtc"))
+				opt_class = a;
+			else if (!strcmp(a, "framebuffer"))
+				opt_class = a;
+			else
+				show_usage = 1;
+		}
 	}
-	flt_msk = (1<<flt_cnt)-1;
 
-	for (int i=1; i<argc; ++i)
+	if (show_usage)
 	{
-		const char* a = argv[i];
-		if (!strncmp(a, "class=", 6)) opt_class = a+6;
-		if (!strncmp(a, "propkey=", 8)) opt_propkey = a+8;
-		if (!strncmp(a, "propval=", 8)) opt_propval = a+8;
-		if (!strncmp(a, "crtc=", 5)) opt_crtc = atoi(a+5);
-		if (!strncmp(a, "connected=", 10)) opt_connected = atoi(a+10);
-		if (!strncmp(a, "active=",7)) opt_active = atoi(a+7);
+		fprintf(stderr, "Usage: %s [plane|connector|crtc|framebuffer] property:value\n", argv[0]);
+		exit(1);
 	}
 
 	const int fd = open(devname, O_RDWR);
@@ -283,13 +262,13 @@ int main(int argc, char* argv[])
 	}
 
 	if (!strcmp(opt_class, "crtc"))
-		list_crtc(fd, res, opt_active);
+		list_crtc(fd, res);
 
 	if (!strcmp(opt_class, "plane"))
-		list_plan(fd, res, opt_crtc);
+		list_plan(fd, res);
 
 	if (!strcmp(opt_class, "connector"))
-		list_conn(fd, res, opt_connected>0);
+		list_conn(fd, res);
 
 	if (!strcmp(opt_class, "framebuffer"))
 		list_frmb(fd, res);

@@ -84,6 +84,20 @@ static int prop_value_passes(drmModePropertyPtr prop, uint64_t pval)
 }
 
 
+static int all_props_pass(int fd, drmModeObjectPropertiesPtr props)
+{
+	const int nump = props->count_props;
+	for (int i=0; i<nump; ++i)
+	{
+		const uint64_t actualval = props->prop_values[i];
+		drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
+		if (!prop_value_passes(prop, actualval))
+			return 0;
+	}
+	return 1;
+}
+
+
 // List the connectors.
 static int list_conn(int fd, drmModeResPtr res)
 {
@@ -103,18 +117,10 @@ static int list_conn(int fd, drmModeResPtr res)
 			fprintf(stderr, "Failed to get properties for connector %d\n", connid);
 			continue;
 		}
-
-		const int nump = props->count_props;
-		int filter_out=0;
-		for (int i=0; i<nump; ++i)
-		{
-			const uint64_t actualval = props->prop_values[i];
-			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-			if (!prop_value_passes(prop, actualval))
-				filter_out=1;
-		}
-		if (!filter_out)
+		if (all_props_pass(fd, props))
 			fprintf(stdout, "%d\n", connid);
+		drmModeFreeObjectProperties(props);
+		drmModeFreeConnector(connector);
 	}
 	return numcon;
 }
@@ -137,18 +143,10 @@ static int list_crtc(int fd, drmModeResPtr res)
 			fprintf(stderr, "Failed to get properties for crtc %d\n", crtc_id);
 			continue;
 		}
-
-		const int nump = props->count_props;
-		int filter_out=0;
-		for (int i=0; i<nump; ++i)
-		{
-			const uint64_t actualval = props->prop_values[i];
-			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-			if (!prop_value_passes(prop, actualval))
-				filter_out=1;
-		}
-		if (!filter_out)
+		if (all_props_pass(fd, props))
 			fprintf(stdout, "%d\n", crtc_id);
+		drmModeFreeObjectProperties(props);
+		drmModeFreeCrtc(crtc);
 	}
 	return numcrtcs;
 }
@@ -170,17 +168,10 @@ static int list_frmb(int fd, drmModeResPtr res)
 			fprintf(stderr, "Failed to get properties for framebuffer %d\n", fb_id);
 			continue;
 		}
-		const int nump = props->count_props;
-		int filter_out=0;
-		for (int i=0; i<nump; ++i)
-		{
-			const uint64_t actualval = props->prop_values[i];
-			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-			if (!prop_value_passes(prop, actualval))
-				filter_out=1;
-		}
-		if (!filter_out)
+		if (all_props_pass(fd, props))
 			fprintf(stdout, "%d\n", fb_id);
+		drmModeFreeObjectProperties(props);
+		drmModeFreeFB(fb);
 #if 0
 		fprintf(stderr, "fb %d bpp=%d %dx%d depth=%d\n", fb_id, fb->bpp, fb->width, fb->height, fb->depth);
 #endif
@@ -212,18 +203,10 @@ static int list_plan(int fd, drmModeResPtr res)
 			fprintf(stderr, "Failed to get object properties: %s\n", strerror(errno));
 			continue;
 		}
-
-		const int nump = props->count_props;
-		int filter_out = 0;
-		for (int i=0; i<nump; ++i)
-		{
-			const uint64_t actualval = props->prop_values[i];
-			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-			if (!prop_value_passes(prop, actualval))
-				filter_out = 1;
-		}
-		if (!filter_out)
+		if (all_props_pass(fd, props))
 			fprintf(stdout, "%d\n", plane->plane_id);
+		drmModeFreeObjectProperties(props);
+		drmModeFreePlane(plane);
 	}
 	return numplanes;
 }

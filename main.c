@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 	const char* devenv = getenv("GFXI_DEVICE");
 	const char* devname = devenv ? devenv : "/dev/dri/card0";
 
-	int show_usage = argc == 1;
+	int show_usage = 0;
 	for (int i=1; i<argc; ++i)
 	{
 		const char* a = argv[i];

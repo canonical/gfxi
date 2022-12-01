@@ -24,6 +24,7 @@ static char        flt_keys[MAXFILT][80];
 static char        flt_vals[MAXFILT][80];
 
 #if 0
+// Potential use: human readable output.
 static const char* connector_name(int co)
 {
 	if (co == DRM_MODE_CONNECTOR_Unknown) return "Unknown";
@@ -83,7 +84,7 @@ static int prop_value_passes(drmModePropertyPtr prop, uint64_t pval)
 }
 
 
-// List the (connected) connectors
+// List the connectors.
 static int list_conn(int fd, drmModeResPtr res)
 {
 	const int numcon = res->count_connectors;
@@ -119,6 +120,7 @@ static int list_conn(int fd, drmModeResPtr res)
 }
 
 
+// List the controllers.
 static int list_crtc(int fd, drmModeResPtr res)
 {
 	const int numcrtcs = res->count_crtcs;
@@ -152,17 +154,36 @@ static int list_crtc(int fd, drmModeResPtr res)
 }
 
 
+// List the framebuffers.
 static int list_frmb(int fd, drmModeResPtr res)
 {
 	const int numfbs = res->count_fbs;
-	fprintf(stderr, "numfbs=%d\n", numfbs);
 	for (int i=0; i<numfbs; ++i)
 	{
-		uint32_t fb_id = res->fbs[i];
+		const uint32_t fb_id = res->fbs[i];
 		drmModeFBPtr fb = drmModeGetFB(fd, fb_id);
 		if (!fb)
 			continue;
+		drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, fb_id, DRM_MODE_OBJECT_FB);
+		if (!props)
+		{
+			fprintf(stderr, "Failed to get properties for framebuffer %d\n", fb_id);
+			continue;
+		}
+		const int nump = props->count_props;
+		int filter_out=0;
+		for (int i=0; i<nump; ++i)
+		{
+			const uint64_t actualval = props->prop_values[i];
+			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
+			if (!prop_value_passes(prop, actualval))
+				filter_out=1;
+		}
+		if (!filter_out)
+			fprintf(stdout, "%d\n", fb_id);
+#if 0
 		fprintf(stderr, "fb %d bpp=%d %dx%d depth=%d\n", fb_id, fb->bpp, fb->width, fb->height, fb->depth);
+#endif
 	}
 	return numfbs;
 }

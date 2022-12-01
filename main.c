@@ -58,6 +58,7 @@ static int prop_value_passes(drmModePropertyPtr prop, uint64_t pval)
 		const char* key = flt_keys[i];
 		const char* val = flt_vals[i];
 		// If filter name and property name match, check values.
+		//fprintf(stderr,"propname: %s\n", prop->name);
 		if (!strcmp(key, prop->name))
 		{
 			uint64_t reqval = 0xffffffffffffffff;
@@ -90,18 +91,29 @@ static int list_conn(int fd, drmModeResPtr res)
 
 	for (int i=0; i<numcon; ++i)
 	{
-		drmModeConnectorPtr connector = drmModeGetConnectorCurrent(fd, res->connectors[i]);
+		const int connid = res->connectors[i];
+		drmModeConnectorPtr connector = drmModeGetConnectorCurrent(fd, connid);
 		if (!connector)
 			continue;
-		int connected = connector->connection == DRM_MODE_CONNECTED;
-		(void)connected;
-		fprintf(stdout, "%d\n", res->connectors[i]);
-#if 0
-		drmModeEncoderPtr encoder = drmModeGetEncoder(fd, connector->encoder_id);
-		if (!encoder)
+		//int connected = connector->connection == DRM_MODE_CONNECTED;
+		drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, connid, DRM_MODE_OBJECT_CONNECTOR);
+		if (!props)
+		{
+			fprintf(stderr, "Failed to get properties for connector %d\n", connid);
 			continue;
-		fprintf(stderr, "Controller: %d\n", encoder->crtc_id);
-#endif
+		}
+
+		const int nump = props->count_props;
+		int filter_out=0;
+		for (int i=0; i<nump; ++i)
+		{
+			const uint64_t actualval = props->prop_values[i];
+			drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
+			if (!prop_value_passes(prop, actualval))
+				filter_out=1;
+		}
+		if (!filter_out)
+			fprintf(stdout, "%d\n", connid);
 	}
 	return numcon;
 }

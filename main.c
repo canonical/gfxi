@@ -90,7 +90,7 @@ static int all_props_pass(int fd, drmModeObjectPropertiesPtr props)
 	{
 		const uint64_t actualval = props->prop_values[i];
 		drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-		int passes = prop_value_passes(prop, actualval);
+		const int passes = prop_value_passes(prop, actualval);
 		drmModeFreeProperty(prop);
 		if (!passes)
 			return 0;
@@ -239,7 +239,6 @@ static int list_plan(int fd, drmModeResPtr res)
 		fprintf(stderr, "Failed to get plane resources: %s\n", strerror(errno));
 		return errno;
 	}
-
 	const int numplanes = res_planes->count_planes;
 	for (int p=0; p<numplanes; ++p)
 	{
@@ -258,6 +257,7 @@ static int list_plan(int fd, drmModeResPtr res)
 		drmModeFreeObjectProperties(props);
 		drmModeFreePlane(plane);
 	}
+	drmModeFreePlaneResources(res_planes);
 	return numplanes;
 }
 
@@ -340,6 +340,8 @@ int main(int argc, char* argv[])
 
 	if (!strcmp(opt_class, "framebuffer"))
 		list_frmb(fd, res);
+
+	drmModeFreeResources(res);
 
 	close(fd);
 	return 0;

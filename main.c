@@ -17,13 +17,13 @@
 
 // Command line arguments.
 static const char* opt_class = "plane";
+static int         opt_annotate = 0;
 
 #define MAXFILT 16
 static int         flt_cnt = 0;
 static char        flt_keys[MAXFILT][80];
 static char        flt_vals[MAXFILT][80];
 
-#if 0
 // Potential use: human readable output.
 static const char* connector_name(int co)
 {
@@ -47,7 +47,6 @@ static const char* connector_name(int co)
 	if (co == DRM_MODE_CONNECTOR_DPI) return "DPI";
 	return "unknown";
 }
-#endif
 
 
 // Checks to see if a property value passes all the filters that have been set.
@@ -91,10 +90,61 @@ static int all_props_pass(int fd, drmModeObjectPropertiesPtr props)
 	{
 		const uint64_t actualval = props->prop_values[i];
 		drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
-		if (!prop_value_passes(prop, actualval))
+		int passes = prop_value_passes(prop, actualval);
+		drmModeFreeProperty(prop);
+		if (!passes)
 			return 0;
 	}
 	return 1;
+}
+
+
+static const char* connector_annotation(int fd, drmModeConnectorPtr connector)
+{
+	static char s[80];
+	const char* status = "unknown";
+	if (connector->connection == DRM_MODE_CONNECTED) status = "connected";
+	if (connector->connection == DRM_MODE_DISCONNECTED) status = "disconnected";
+	snprintf(s, sizeof(s), "\t# %s (%s)", connector_name(connector->connector_type), status);
+	return s;
+}
+
+
+static const char* crtc_annotation(int fd, drmModeCrtcPtr crtc)
+{
+	static char s[80];
+	snprintf(s, sizeof(s), "\t# %dx%d+%d+%d", crtc->width, crtc->height, crtc->x, crtc->y);
+	return s;
+}
+
+
+static const char* plane_annotation(int fd, drmModePlanePtr plane)
+{
+	static char s[80];
+	char t[40] = {0,};
+	drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
+	assert(props);
+	const int nump = props->count_props;
+	uint64_t w=0,h=0;
+	for (int i=0; i<nump; ++i)
+	{
+		drmModePropertyPtr prop = drmModeGetProperty(fd, props->props[i]);
+		if (!strcmp(prop->name, "type"))
+		{
+			for (int j=0; j<prop->count_enums; ++j)
+			{
+				const char* nm = prop->enums[j].name;
+				if (prop->enums[j].value == props->prop_values[i])
+					strncpy(t, nm, sizeof(t));
+			}
+		}
+		if (!strcmp(prop->name, "SRC_W")) w = props->prop_values[i] >> 16;
+		if (!strcmp(prop->name, "SRC_H")) h = props->prop_values[i] >> 16;
+		drmModeFreeProperty(prop);
+	}
+	drmModeFreeObjectProperties(props);
+	snprintf(s, sizeof(s), "\t# %s (%lux%lu)", t, w, h);
+	return s;
 }
 
 
@@ -118,7 +168,7 @@ static int list_conn(int fd, drmModeResPtr res)
 			continue;
 		}
 		if (all_props_pass(fd, props))
-			fprintf(stdout, "%d\n", connid);
+			fprintf(stdout, "%d%s\n", connid, opt_annotate ? connector_annotation(fd, connector):"");
 		drmModeFreeObjectProperties(props);
 		drmModeFreeConnector(connector);
 	}
@@ -144,7 +194,7 @@ static int list_crtc(int fd, drmModeResPtr res)
 			continue;
 		}
 		if (all_props_pass(fd, props))
-			fprintf(stdout, "%d\n", crtc_id);
+			fprintf(stdout, "%d%s\n", crtc_id, opt_annotate ? crtc_annotation(fd, crtc) : "");
 		drmModeFreeObjectProperties(props);
 		drmModeFreeCrtc(crtc);
 	}
@@ -204,7 +254,7 @@ static int list_plan(int fd, drmModeResPtr res)
 			continue;
 		}
 		if (all_props_pass(fd, props))
-			fprintf(stdout, "%d\n", plane->plane_id);
+			fprintf(stdout, "%d%s\n", plane->plane_id, opt_annotate ? plane_annotation(fd, plane) : "");
 		drmModeFreeObjectProperties(props);
 		drmModeFreePlane(plane);
 	}
@@ -237,7 +287,9 @@ int main(int argc, char* argv[])
 		else
 		{
 			// Handle class option
-			if (!strcmp(a, "plane"))
+			if (!strcmp(a, "--annotate"))
+				opt_annotate = 1;
+			else if (!strcmp(a, "plane"))
 				opt_class = a;
 			else if (!strcmp(a, "connector"))
 				opt_class = a;
@@ -252,7 +304,7 @@ int main(int argc, char* argv[])
 
 	if (show_usage)
 	{
-		fprintf(stderr, "Usage: %s [plane|connector|crtc|framebuffer] property:value\n", argv[0]);
+		fprintf(stderr, "Usage: %s [--annotate] [plane|connector|crtc|framebuffer] property:value\n", argv[0]);
 		exit(1);
 	}
 

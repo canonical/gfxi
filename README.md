@@ -30,11 +30,19 @@ To list other resources, specify which type on the command line.
 The output can be filtered on property values with a key:value annotation.
 
 ```
-./gfxi [plane|connector|crtc|framebuffer] [PROP:VALUE ... PROP:VALUE]
+./gfxi [--annotate] [plane|connector|crtc|framebuffer] [PROP:VALUE ... PROP:VALUE]
 ```
 Currently, to see which properties are available for filtering, it is best to use drm_info.
 
 If you do not set the `GFXI_DEVICE` environment variable, `/dev/dri/card0` will be used as graphics device.
+
+To get more human-friendly output, you can tell gfxi to annotate the object IDs it finds with the `--annotate` flag:
+```
+$ ./gfxi --annotate connector
+236	# DP (connected)
+249	# HDMI-A (disconnected)
+255	# HDMI-A (disconnected)
+```
 
 ## Rationale
 

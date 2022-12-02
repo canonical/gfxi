@@ -9,17 +9,20 @@ It will answer typical questions like:
 
 *"What are the active CRTCs?"*
 ```
-./gfxi crtc ACTIVE:1
+$ ./gfxi crtc ACTIVE:1
+80
 ```
 
 *"What planes are available of type Overlay on the single active CRTC?"*
 ```
-./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
+$ ./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
+40
 ```
 
 *"How many cursor planes does the second GPU device provide?"*
 ```
-GFXI_DEVICE=/dev/dri/card1 ./gfxi plane type:Cursor | wc -l
+$ GFXI_DEVICE=/dev/dri/card1 ./gfxi plane type:Cursor | wc -l
+0
 ```
 
 ## Usage

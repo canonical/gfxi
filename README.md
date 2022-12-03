@@ -13,7 +13,7 @@ $ ./gfxi crtc ACTIVE:1
 80
 ```
 
-*"What planes are available of type Overlay on the single active CRTC?"*
+*"What planes type Overlay are currently in use on the single active CRTC?"*
 ```
 $ ./gfxi plane type:Overlay CRTC_ID:`./gfxi crtc ACTIVE:1`
 40

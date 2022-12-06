@@ -47,6 +47,10 @@ $ ./gfxi --annotate connector
 255	# HDMI-A (disconnected)
 ```
 
+## Dependencies
+
+gfxi depends on the [libdrm](https://gitlab.freedesktop.org/mesa/drm) library.
+
 ## Rationale
 
 Much of these questions could be answered by running the

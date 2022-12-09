@@ -1,0 +1,74 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2022 Bram Stolk <b.stolk@gmail.com>,
+.\"
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH GFXI 1 "December  8 2022"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+gfxi \- Graphics Information: program to list DRM resources.
+.SH SYNOPSIS
+.B gfxi [--annotate] [plane|connector|crtc|framebuffer] [PROP:VALUE ... PROP:VALUE]
+.SH DESCRIPTION
+This manual page documents the
+.B gfxi
+command.
+.PP
+\fBgfxi\fP is a program that that query DRM resources and is able to answer typical questions such as: 
+.br
+.sp 1
+\fI"What are the active CRTCs?"\fP
+.br
+$ gfxi crtc ACTIVE:1
+.br
+80
+.br
+.sp 1
+\fI"What planes type Overlay are currently in use on the single active CRTC?"\fP
+.br
+$ gfxi plane type:Overlay CRTC_ID:`gfxi crtc ACTIVE:1`
+.br
+40
+.br
+.sp 1
+\fI"How many cursor planes does the second GPU device provide?"\fP
+.br
+$ GFXI_DEVICE=/dev/dri/card1 gfxi plane type:Cursor | wc -l
+.br
+0
+.br
+.sp 1
+.SH OPTIONS
+By default, gfxi will list planes. To list other resources, specify which type on the command line.
+.sp 1
+The output can be filtered on property values with a key:value annotation.
+To see which properties can be used as filter keys, see the output from the drm_info command.
+.sp 1
+
+\fB--annotate\fP 
+.br
+Annotate the results with human readable information.
+.br
+.sp 1
+.SH ENVIRONMENT
+.sp 1
+\fBGFXI_DEVICE\fP
+.br
+The DRM device to use. If not set, /dev/dri/card0 will be used.
+.sp 1
+.SH SEE ALSO
+.br
+drm_info(1)
+

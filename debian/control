@@ -1,0 +1,17 @@
+Source: gfxi
+Section: contrib/utils
+Priority: optional
+Maintainer: Bram Stolk <bram.stolk@canonical.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ libdrm-dev,
+ pkgconf
+Standards-Version: 4.6.1
+Homepage: https://github.com/canonical/gfxi
+
+Package: gfxi
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Graphics Information tool to query DRM resources.
+ Queries DRM resources: planes, connectors, crtcs, framebuffers from /dev/dri/cardX.

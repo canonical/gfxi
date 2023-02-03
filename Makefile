@@ -28,11 +28,18 @@ debian
 clean:
 	$(RM) $(TARGET)
 
+install: gfxi
+	install -d ${DESTDIR}/usr/bin
+	install -m 755 gfxi ${DESTDIR}/usr/bin/
+
+uninstall:
+	rm -f ${DESTDIR}/usr/bin/gfxi
+
 tarball:
-	tar cvzf ../gfxi_1.2.orig.tar.gz $(DISTFILES)
+	tar cvzf ../gfxi_1.3.orig.tar.gz $(DISTFILES)
 
 packageupload:
 	debuild -S
-	debsign ../gfxi_1.2-1_source.changes
-	dput ppa:b-stolk/ppa ../gfxi_1.2-1_source.changes
+	debsign ../gfxi_1.3-1_source.changes
+	dput ppa:b-stolk/ppa ../gfxi_1.3-1_source.changes
 

@@ -206,6 +206,7 @@ static int list_crtc(int fd, drmModeResPtr res)
 static int list_frmb(int fd, drmModeResPtr res)
 {
 	const int numfbs = res->count_fbs;
+	//fprintf(stderr, "numfbs: %d\n", numfbs);
 	for (int i=0; i<numfbs; ++i)
 	{
 		const uint32_t fb_id = res->fbs[i];
@@ -222,7 +223,7 @@ static int list_frmb(int fd, drmModeResPtr res)
 			fprintf(stdout, "%d\n", fb_id);
 		drmModeFreeObjectProperties(props);
 		drmModeFreeFB(fb);
-#if 0
+#if 1
 		fprintf(stderr, "fb %d bpp=%d %dx%d depth=%d\n", fb_id, fb->bpp, fb->width, fb->height, fb->depth);
 #endif
 	}

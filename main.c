@@ -18,6 +18,7 @@
 // Command line arguments.
 static const char* opt_class = "plane";
 static int         opt_annotate = 0;
+static int         opt_driver = 0;
 
 #define MAXFILT 16
 static int         flt_cnt = 0;
@@ -290,6 +291,8 @@ int main(int argc, char* argv[])
 			// Handle class option
 			if (!strcmp(a, "--annotate"))
 				opt_annotate = 1;
+			else if (!strcmp(a, "--driver"))
+				opt_driver = 1;
 			else if (!strcmp(a, "plane"))
 				opt_class = a;
 			else if (!strcmp(a, "connector"))
@@ -322,6 +325,22 @@ int main(int argc, char* argv[])
 	const int setcapres1 = drmSetClientCap(fd, DRM_CLIENT_CAP_ATOMIC, 1);
 	if (setcapres1)
 		fprintf(stderr, "Failed to set client capability: %s\n", strerror(errno));
+
+	if (opt_driver)
+	{
+		drmVersionPtr vers = drmGetVersion(fd);
+		fprintf
+		(
+			stdout,
+			"%s %d.%d.%d\n",
+			vers->name,
+			vers->version_major,
+			vers->version_minor,
+			vers->version_patchlevel
+		);
+		drmFreeVersion(vers);
+		return 0;
+	}
 
 	const drmModeResPtr res = drmModeGetResources(fd);
 	if (!res)

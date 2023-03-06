@@ -1,0 +1,39 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: configure
+      run: echo "Nothing to configure."
+
+    - name: Refresh software list
+      run: sudo apt-get update
+      
+    - name: Install pkgconf
+      run: sudo apt-get install pkgconf
+      
+    - name: Install libdrm-dev
+      run: sudo apt-get install libdrm-dev
+      
+    - name: Build binary
+      run: make
+
+    - name: Run driver check
+      run: sudo ./gfxi --driver
+    
+    - name: Run crtc check
+      run: sudo ./gfxi --annotate crtc ACTIVE:1
+
+    - name: Run distcheck
+      run: echo "Skipped"

@@ -1,0 +1,40 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*-ubuntu-*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install packages build
+        run: |
+          sudo apt update
+          sudo apt install -y devscripts equivs dput
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.CANONICAL_KEY }}
+          passphrase: ${{ secrets.CANONICAL_PASSPHRASE }}
+
+      - name: Build package
+        run: |
+          PKG_VER=$(dpkg-parsechangelog | sed -n 's/^Version: //p')
+          VERS_ARRAY=(${PKG_VER//-/ })
+          PKG_ORIG_VER=${VERS_ARRAY[0]}
+          git archive --format=tar.gz -o gfxi_${PKG_ORIG_VER}.orig.tar.gz HEAD
+          mv gfxi_${PKG_ORIG_VER}.orig.tar.gz ../
+          sudo mk-build-deps -i -r
+          sudo rm -f gfxi-build-deps*
+          debuild -S -us -uc
+          cd ../
+          debsign -khector.cao@canonical.com gfxi_${PKG_VER}_source.changes
+          dput -f ppa:kivuteam/ppa gfxi_${PKG_VER}_source.changes
+
